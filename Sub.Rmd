@@ -1,0 +1,15 @@
+---
+title: "A machine learning approach to evaluate exercise performance"
+author: "JMW0103"
+date: "Thursday, September 17, 2015"
+output: html_document
+---
+
+```{r}
+library(digest)
+if(file.exists("pml-training.csv")&&(identical(digest("pml-training.csv",file=TRUE),"56926c78af383dcdc2060407942e52e9"))){   
+} else{  download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv","pml-training.csv")}
+
+if(file.exists("pml-testing.csv")&&(identical(digest("pml-testing.csv",file=TRUE),"bc4174f3ec5dfcc5c570a1d2709272d9"))){   
+} else{  download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv","pml-testing.csv") }
+```
