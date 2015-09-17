@@ -12,6 +12,7 @@ library(randomForest)
 set.seed(91295)
 ```
 
+# Obtain and Load the Data
 
 The correct data sets are required for this analysis:  
 1) a set of data >19000 instances from  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv**   
@@ -32,14 +33,16 @@ baseData<-read.csv("pml-training.csv",na.strings=c("NA","#DIV/0!",""))
 testData<-read.csv("pml-testing.csv",na.strings=c("NA","#DIV/0!",""))
 ```
 
-Determine the pre-processing and cleaning required of the data sets:
+# Clean and Preproces the Data Sets.
+
+Determine the cleaning and pre-processing drequired of the data sets:
 
 
-* Fields 1-7  are irrelevant and can produce spurious overfitting  
-        + remove from in the training data
+* Fields 1-7 are codes for participants and other data which can produce spurious overfitting  
+        + remove from in the training data and test set
 
-* determine all fields where >5% of entries are NA
-* remove these columns from the test and training
+* determine all fields where >5% of entries are NA  
+        + remove these columns from the training data and test set
 
 ```{r}
 numInst<-length(baseData[,1])
@@ -48,4 +51,38 @@ na_level<-colSums((is.na(baseStrip_1))/numInst)<0.05
 baseStrip_2<-baseStrip_1[,na_level] ; testStrip_2<-testStrip_1[,na_level]
 ```
 
-There are `r length(baseStrip_2[,1])` instances in the training data   
+There are `r length(baseStrip_2[,1])` instances in the training data.   
+
+Preprocess the data set to optimize range, distribution etc.  
+Remove the class identifiers from the data.
+
+```{r}
+ppc<-preProcess(baseStrip_2[,-ncol(baseStrip_2)],method=c("BoxCox","center","scale"))
+ds<-predict(ppc,baseStrip_2[,-ncol(baseStrip_2)])
+```
+
+Perform PCA (Principal Component Analysis) and determine approx number of components required to optimize variance coverage (first 95% of variance).
+
+```{r}
+pca<-prcomp(ds)
+cumSumms<-cumsum(100*pca$sdev^2)/sum(pca$sdev^2)
+numComp<-sum(cumSumms<95)+1
+```
+As shown in the following figure, `r numComp` components account for 95% of the variance:
+```{r}
+plot((cumsum(100*pca$sdev^2)/sum(pca$sdev^2)), xlab="principal component",
+ylab="cummulative %(variance)", type="b", pch=9,ylim=c(0,100))
+```
+
+ **Principal Component Analysis of data in the training data set.**
+
+ The classification codes were removed, along with the first 7 elements of each observation. The remaining variables were subjected to the BoxCox transformation to approximate normal distribuion, then centred and scaled. Robust imputation was ensured by removing all columns with more than 5% missing values. The cummulative variance accounted for by the components calculated by PCA are shown. 95% of variance is accounted for by the first `r numComp` components. 
+
+
+Use the preprocess function to transform the 
+
+```{r}
+ppc2<-preProcess(baseStrip_2[,-ncol(baseStrip_2)],method=c("BoxCox","center","scale","pca"),pcaComp=numComp)
+reduced_Set<-predict(ppc2,baseStrip_2[,-ncol(baseStrip_2)])
+reduced_Set[ncol(reduced_Set)+1]<-baseStrip_2[,ncol(baseStrip_2)]
+```
