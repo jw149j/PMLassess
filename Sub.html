@@ -58,13 +58,32 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </div>
 
 
+<p>Load the required packages for this analysis</p>
+<pre class="r"><code>library(digest)
+library(caret)
+library(randomForest)
+set.seed(91295)</code></pre>
+<p>The correct data sets are required for this analysis:<br />1) a set of data &gt;19000 instances from <strong><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a></strong><br />2) a set of test instances for <em>automatic</em> <strong>evaluation of the model</strong> <strong><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a></strong></p>
 <pre class="r"><code>library(digest)
 if(file.exists(&quot;pml-training.csv&quot;)&amp;&amp;(identical(digest(&quot;pml-training.csv&quot;,file=TRUE),&quot;56926c78af383dcdc2060407942e52e9&quot;))){   
-} else{  download.file(&quot;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;,&quot;pml-training.csv&quot;)}</code></pre>
-<pre><code>## NULL</code></pre>
-<pre class="r"><code>if(file.exists(&quot;pml-testing.csv&quot;)&amp;&amp;(identical(digest(&quot;pml-testing.csv&quot;,file=TRUE),&quot;bc4174f3ec5dfcc5c570a1d2709272d9&quot;))){   
+} else{  download.file(&quot;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;,&quot;pml-training.csv&quot;)}
+
+if(file.exists(&quot;pml-testing.csv&quot;)&amp;&amp;(identical(digest(&quot;pml-testing.csv&quot;,file=TRUE),&quot;bc4174f3ec5dfcc5c570a1d2709272d9&quot;))){   
 } else{  download.file(&quot;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;,&quot;pml-testing.csv&quot;) }</code></pre>
-<pre><code>## NULL</code></pre>
+<p>Manual inspection of the training data set indicates 3 distinct labels for data not available : <strong>“NA”, “”</strong> and <strong>“#DIV/0!”</strong> Read the data sets into data frames, using the above strings to indicate NA in the dataframe.</p>
+<pre class="r"><code>baseData&lt;-read.csv(&quot;pml-training.csv&quot;,na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;,&quot;&quot;))
+testData&lt;-read.csv(&quot;pml-testing.csv&quot;,na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;,&quot;&quot;))</code></pre>
+<p>Determine the pre-processing and cleaning required of the data sets:</p>
+<ul>
+<li><p>Fields 1-7 are irrelevant and can produce spurious overfitting<br /> + remove from in the training data</p></li>
+<li>determine all fields where &gt;5% of entries are NA</li>
+<li><p>remove these columns from the test and training</p></li>
+</ul>
+<pre class="r"><code>numInst&lt;-length(baseData[,1])
+baseStrip_1&lt;-baseData[,-(1:7)] ; testStrip_1&lt;-testData[,-(1:7)]
+na_level&lt;-colSums((is.na(baseStrip_1))/numInst)&lt;0.05
+baseStrip_2&lt;-baseStrip_1[,na_level] ; testStrip_2&lt;-testStrip_1[,na_level]</code></pre>
+<p>There are 19622 instances in the training data</p>
 
 
 </div>

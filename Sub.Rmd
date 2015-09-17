@@ -4,8 +4,20 @@ author: "JMW0103"
 date: "Thursday, September 17, 2015"
 output: html_document
 ---
+Load the required packages for this analysis
+```{r warning=FALSE, message=FALSE }
+library(digest)
+library(caret)
+library(randomForest)
+set.seed(91295)
+```
 
-```{r}
+
+The correct data sets are required for this analysis:  
+1) a set of data >19000 instances from  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv**   
+2) a set of test instances for _automatic_  __evaluation of the model__  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv**
+
+```{r message=FALSE,results='hide'}
 library(digest)
 if(file.exists("pml-training.csv")&&(identical(digest("pml-training.csv",file=TRUE),"56926c78af383dcdc2060407942e52e9"))){   
 } else{  download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv","pml-training.csv")}
@@ -13,3 +25,27 @@ if(file.exists("pml-training.csv")&&(identical(digest("pml-training.csv",file=TR
 if(file.exists("pml-testing.csv")&&(identical(digest("pml-testing.csv",file=TRUE),"bc4174f3ec5dfcc5c570a1d2709272d9"))){   
 } else{  download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv","pml-testing.csv") }
 ```
+Manual inspection of the training data set indicates 3 distinct labels for data not available : **"NA", ""** and **"#DIV/0!"**
+Read the data sets into data frames, using the above strings to indicate NA in the dataframe.  
+```{r}
+baseData<-read.csv("pml-training.csv",na.strings=c("NA","#DIV/0!",""))
+testData<-read.csv("pml-testing.csv",na.strings=c("NA","#DIV/0!",""))
+```
+
+Determine the pre-processing and cleaning required of the data sets:
+
+
+* Fields 1-7  are irrelevant and can produce spurious overfitting  
+        + remove from in the training data
+
+* determine all fields where >5% of entries are NA
+* remove these columns from the test and training
+
+```{r}
+numInst<-length(baseData[,1])
+baseStrip_1<-baseData[,-(1:7)] ; testStrip_1<-testData[,-(1:7)]
+na_level<-colSums((is.na(baseStrip_1))/numInst)<0.05
+baseStrip_2<-baseStrip_1[,na_level] ; testStrip_2<-testStrip_1[,na_level]
+```
+
+There are `r length(baseStrip_2[,1])` instances in the training data   
