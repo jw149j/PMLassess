@@ -9,14 +9,15 @@ Load the required packages for this analysis
 library(digest)
 library(caret)
 library(randomForest)
+library(kernlab)
 set.seed(91295)
 ```
 
-# Obtain and Load the Data
+## Obtain and Load the Data
 
 The correct data sets are required for this analysis:  
-1) a set of data >19000 instances from  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv**   
-2) a set of test instances for _automatic_  __evaluation of the model__  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv** (auto_TestSet).
+1) a set of data >19000 instances from  [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)   
+2) a set of test instances for _automatic_  __evaluation of the model__  [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv) (auto_TestSet).
 
 ```{r message=FALSE,results='hide'}
 library(digest)
@@ -33,9 +34,9 @@ baseData<-read.csv("pml-training.csv",na.strings=c("NA","#DIV/0!",""))
 auto_TestSet<-read.csv("pml-testing.csv",na.strings=c("NA","#DIV/0!",""))
 ```
 
-# Clean and Preprocess the Data Sets.
+## Clean and Preprocess the Data Sets.
 
-Determine the cleaning and pre-processing drequired of the data sets:
+Determine the cleaning and pre-processing required of the data sets:
 
 
 * Fields 1-7 are codes for participants and other data which can produce spurious overfitting  
@@ -60,7 +61,7 @@ trainSet<-trainData[trainSetindex,]
 testSet<-trainData[-trainSetindex,]
 ```
 
-There are `r length(trainSet[,1])` instances in the training data and `r length(trainSet[,1])` in the test set.    
+There are `r length(trainSet[,1])` instances in the training data and `r length(testSet[,1])` in the test set.    
 
 Preprocess the data set to optimize range, distribution etc.  
 Remove the class identifiers from the data.
@@ -83,7 +84,7 @@ plot((cumsum(100*pca$sdev^2)/sum(pca$sdev^2)), xlab="principal component",
 ylab="cummulative %(variance)", type="b", pch=9,ylim=c(0,100))
 ```
 
- **Principal Component Analysis of data in the training data set.**
+ **FIG1. Principal Component Analysis of data in the training data set.**
 
  The classification codes were removed, along with the first 7 elements of each observation. The remaining variables were subjected to the BoxCox transformation to approximate normal distribuion, then centred and scaled. Robust imputation was ensured by removing all columns with more than 5% missing values. The cummulative variance accounted for by the components calculated by PCA are shown. 95% of variance is accounted for by the first `r numComp` components. 
 
@@ -93,13 +94,33 @@ Use the preprocess function to transform the training and test data
 ```{r}
 ppc2<-preProcess(trainSet[,-ncol(trainSet)],method=c("BoxCox","center","scale","pca"),pcaComp=numComp)
 reduced_trSet<-predict(ppc2,trainSet[,-ncol(trainSet)])
-reduced_trSet[ncol(reduced_trSet)+1]<-trainSet[,ncol(trainSet)]
+reduced_trSet[,ncol(reduced_trSet)+1]<-trainSet[,ncol(trainSet)]
 reduced_testSet<-predict(ppc2,testSet[,-ncol(testSet)])
-reduced_testSet[ncol(reduced_testSet)+1]<-testSet[,ncol(testSet)]
+reduced_testSet[,ncol(reduced_testSet)+1]<-testSet[,ncol(testSet)]
+auto_testPCA<-predict(ppc2,auto_testStrip_2[,-ncol(auto_testStrip_2)])
 
 ```
+
+## Test the performance of a set of machine learning algorithms applied to the test datset.
+
+### Benchmark  
+
+The benchmark level of discrimination is determined by randomising the vector of class values for the training set: maintaining the proportions of the classes but effectively randomly selecting them. 
+
+    
+```{r}
+   class<-reduced_trSet[,ncol(reduced_trSet)]
+   random<-sample(class)
+   matx<-confusionMatrix(random,class)
+   v<-paste(capture.output(matx),collapse="\n")
+   cat(v)
    
-Define a function to automate the running and comparisons of a range of machine learning methods, ustilising the *train* method of the  **caret** package.  
+```                        
+This demonstates an overall accuaracy of **`r round(matx$overall['Accuracy'],3)`**  with an average 'by class' balanced accuracy of  **`r round(mean(matx$byClass[,8]),3)`**.  
+   
+##Test a panel of machine learning algorithms 
+
+Define a function to automate the running and comparisons of a range of machine learning methods, utilising the _**train()**_ method of the  **caret** package. The algorithms are assessed in terms of the overall and 'by class' balanced accuracy, and by the time required to complete the algorithm.
 
 ```{r}
 runTrain<-function(data,method,seed=6543){
@@ -137,8 +158,8 @@ runTrain<-function(data,method,seed=6543){
 ```
 
 ```{r}
-#methods<-c("rpart","lda","svmRadial","rf")
-methods<-c("lda","lda")
+methods<-c("rpart","lda","svmRadial","rf")
+#Rafmethods<-c("lda","lda")
 best<-0;
 meth<-""
 seeds<-c(1496,1776,1812,1969)
@@ -146,12 +167,42 @@ for(i in seq_along(methods)){
     summy<-runTrain(reduced_trSet,methods[i],seed=seeds[i])  
     load(paste(methods[i],".cfm",sep=""))
     if(matx$overall['Accuracy']>best){
+      
        best<-matx$overall['Accuracy']
        meth<-methods[i]
     }
     summy
 }
 
-outtext<-paste("\nThe best method tried is ",meth," with an accuracy of ",best,".\n\n")
+outtext<-paste("\nThe best method tried is ",meth," with an accuracy of ",round(best,3),".\n\n")
 cat(outtext)
+```
+
+## Out of sample performance of the `r meth ` method 
+
+The best scoring method ( `r meth` ) is applied to the test data. From this determine the _*out of sample error*_ for the model.
+
+```{r}
+
+bestMdlFile = paste(meth,".mdl",sep="")
+load(bestMdlFile)
+
+oof<-reduced_testSet[,-ncol(reduced_testSet)]
+predicted<-predict(trainedModel,newdata=oof)
+testKeys<-testSet[,ncol(testSet)]
+falsecalls<-sum(predicted != testKeys)
+matx<-confusionMatrix(predicted,testKeys)
+
+v<-paste(capture.output(matx),collapse="\n")
+
+cat(v)
+```
+
+
+The out of sample error determined for this model (1 - accuracy, where accuracy reflects the performance of the model applied to the test set ) is __`r round(1 - matx$overall['Accuracy'],3)`__ .  
+
+Application of this model to the auto_test data set gives the following prediction:  
+```{r}
+predicted<-predict(trainedModel,newdata=auto_testPCA)
+predicted
 ```

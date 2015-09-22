@@ -63,9 +63,13 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 library(caret)
 library(randomForest)
 set.seed(91295)</code></pre>
-<div id="obtain-and-load-the-data" class="section level1">
-<h1>Obtain and Load the Data</h1>
-<p>The correct data sets are required for this analysis:<br />1) a set of data &gt;19000 instances from <strong><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a></strong><br />2) a set of test instances for <em>automatic</em> <strong>evaluation of the model</strong> <strong><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a></strong> (auto_TestSet).</p>
+<div id="executive-summary." class="section level3">
+<h3>Executive Summary.</h3>
+<p>A group of volunteers were trained to perform a series of supervised exercises with weights, involving a number of defined ‘mistakes’ in technique. Each performance was recorded using a series of accelerometers attached to a number of locations on the body, and a range of values recorded. The purpose of this analysis is to develop a machine learning model which can consistently determine the mode of exercise (i.e. which specific ‘mistake’ is being performed) from a novel set of accelerometer readings. The experiment is described in detail <a href="http://groupware.les.inf.puc-rio.br/">here</a>. The analysis concluded that a random forest model produced a good predictive model, but required major system resources (as indicated by time to complete the model building).</p>
+</div>
+<div id="obtain-and-load-the-data" class="section level3">
+<h3>Obtain and Load the Data</h3>
+<p>The correct data sets are required for this analysis:<br />1) a set of &gt;19000 instances from <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a><br />2) a set of test instances for automatic evaluation of the model <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a> (auto_TestSet).</p>
 <pre class="r"><code>library(digest)
 if(file.exists(&quot;pml-training.csv&quot;)&amp;&amp;(identical(digest(&quot;pml-training.csv&quot;,file=TRUE),&quot;56926c78af383dcdc2060407942e52e9&quot;))){   
 } else{  download.file(&quot;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;,&quot;pml-training.csv&quot;)}
@@ -76,9 +80,9 @@ if(file.exists(&quot;pml-testing.csv&quot;)&amp;&amp;(identical(digest(&quot;pml
 <pre class="r"><code>baseData&lt;-read.csv(&quot;pml-training.csv&quot;,na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;,&quot;&quot;))
 auto_TestSet&lt;-read.csv(&quot;pml-testing.csv&quot;,na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;,&quot;&quot;))</code></pre>
 </div>
-<div id="clean-and-preprocess-the-data-sets." class="section level1">
-<h1>Clean and Preprocess the Data Sets.</h1>
-<p>Determine the cleaning and pre-processing drequired of the data sets:</p>
+<div id="clean-and-preprocess-the-data-sets." class="section level3">
+<h3>Clean and Preprocess the Data Sets.</h3>
+<p>Determine the cleaning and pre-processing required of the data sets:</p>
 <ul>
 <li><p>Fields 1-7 are codes for participants and other data which can produce spurious overfitting<br /> + remove from in the training data and test set</p></li>
 <li><p>determine all fields where &gt;5% of entries are NA<br /> + remove these columns from the training data and test set</p></li>
@@ -95,7 +99,7 @@ auto_testStrip_2&lt;-auto_testStrip_1[,na_level]
 trainSetindex &lt;- createDataPartition(y = trainData[,ncol(trainData)], p = 0.70, list = FALSE)
 trainSet&lt;-trainData[trainSetindex,]
 testSet&lt;-trainData[-trainSetindex,]</code></pre>
-<p>There are 13737 instances in the training data and 13737 in the test set.</p>
+<p>There are 13737 instances in the training data and 5885 in the test set.</p>
 <p>Preprocess the data set to optimize range, distribution etc.<br />Remove the class identifiers from the data.</p>
 <pre class="r"><code>ppc&lt;-preProcess(trainSet[,-ncol(trainSet)],method=c(&quot;BoxCox&quot;,&quot;center&quot;,&quot;scale&quot;))
 ds&lt;-predict(ppc,trainSet[,-ncol(trainSet)])</code></pre>
@@ -107,16 +111,61 @@ numComp&lt;-sum(cumSumms&lt;95)+1</code></pre>
 <pre class="r"><code>plot((cumsum(100*pca$sdev^2)/sum(pca$sdev^2)), xlab=&quot;principal component&quot;,
 ylab=&quot;cummulative %(variance)&quot;, type=&quot;b&quot;, pch=9,ylim=c(0,100))</code></pre>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAAAaVBMVEUAAAAAADoAAGYAOjoAOpAAZpAAZrY6AAA6OgA6kLY6kNtmAABmAGZmOpBmtv+QOgCQZgCQkDqQkNuQ29uQ2/+2ZgC2Zma225C2/7a2///bkDrbtmbb/9vb////tmb/25D//7b//9v///8eiKqwAAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3dC5fayLqYYc0+c+zEc+LJZUiyOdnYw///kUFIgG5g6UMqqcTzrDXL3Rhoqqf7tS6lojgDEFKs/QIAciWgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEFLB/RQ3HxZ+CsBJLZoQI9Fm4YCe7JgQH98Lbr+8c/lvhxAYssF9O8/28X8+cfl89//Nek5egUGCJu7cgsG9NTLZZnU71OeYu3vNrAvszbuvGRAD/0d9stG6KTDoAv8gwF8rIwCetnc/Na78ThtH15AgflkFNDL1mZ/d/007TSSgALzEVCAoIwCahce2JaMAuokErAtOQV0eBpTf6v0BQEF5pNTQAcn0k+7FElAgfnkFNCqmG2//TXpGQQUmE9WAW0uxVSZupiIgALzySyg5zeXsxNQ+BRDv+zv3Db4NbIL6FsEFDZqdMdG3nHoOvV3bhskoMCSZu7d2DsOrfTxzm3D8guoXXjYgnnDOLpjI+84tFbSO7c9kVlA312RXkDhF1YJ4+iOjbxjdUP7xndueyargL6/Ir2AQsNWwji6YyPvWN3QfuHv3PZUTgGdYUV6AeVjjYvlKmGc0LbejU9uq3/Zh28rJt72XE4BnWVF+llfEWxTOJZrhfF1x4rHV+je8clt59sv+/BtxaTbXsgpoBYTgb45YzlvGMdv9J1/0bHm33U+Cdx2f/Zxt72SUUAtZ8enG/rxnTOW84YxstE32LHbk9/u8fZt5+bIf3XbSxkFdPqCysWApV4dLG7o53fOWM4bxthG32DHzs0RNe444ba43re8/Y19+dcBAgozGNXKWWM5bxi7ERwK44tYbsfr/0v5BNQuPHs18GPZ/80d+n2ubmneWt8QiGUxaxi35tx6gecJt/X/37T+B7z864DlEuUkEvs08Fva+GVu3dK6tb6ls8cdjGWxqTCeW1/3Nq72jVNuC24OP57tiZwCakV6dmDUrnkrI7dbBjYsu7EsmmEsOn887jHQieUjOPa2xo1DDey86FG3jd68HrztlZwCakV68tf/nWzlpnFTd8/80cqnseyEp5mOGWN5bj3f8zDGNvqaNw418NXgnt42uBk++rYXcgqoFenJzJitzX4sB7Y2O7/WT2LZC9maYQxu9LVuHGrgi83rF7fd//XpDGfcbc9lFVAr0pOV/hZMK1X3+7RjObC1OdCYBWI5cxijG32NL9lrYPM7M+2287lx23nqbU9lFtCz5ezIRreVQ1ub/VgO9KTbsUViOX8Yn2zg9ds28E1odaz5T8vYa+EtJrIEAWUpvR+tVr5ut3R+NQc2vtrNCrUyFsspYfxFBB8DHtrAe6djRd3G1Lc9I6Awh97vW//XsN+YfiwnbG3e/771Bc/dJxwfy9FbjO9F8L2OtQef7rYnBBRm0PuN67ej36ypsWwVbCiWnSd8Hcs3thjfi+B7HVvrtmECCpP1foz6v+u9Ft1rdv/saS6fFbTV4sFYtr7Ir2L5xhbjexF8r2Nr3TZIQGGqJ0Vop+j86FjzMY2ovWpld2uzt6v/JJbF6Fi+t8X4XgRn79hqBBReGvy1nry7PiWW7duKxzO398yHY1mMjuV7W4w7iuA7BBReebJN1alTp2PtLcbixe76uXG/1q750J5/Z8/83Vi+t8VIKaOADlyHVJp0LaefA6Z5so3W3T9ux60bxsGtzaex7Dxf43HdPfN3Y/mBW4xzE1B4rt+i3kZfcGuzH8v29uvtr4tnX/fZCzxPiCXvyiigQ+9qLKDMaXh/tpmeVtzO52b1Gg8Zqmc/tPdPB3bNR+6Zi+XKcgrodRt00up1PX6ueKHbnX7Iim7wXm1stnfXB3b1b/fp7ZoPxnJwY1Ms15VVQMuCTlx+qcPPGs/1+tSI2/0e58enxbTd9f7W6+NJuh0cjOVgP1lVXgEt9+InvYVHl58/boY25dqFam0x1vd4/MX9EefWbQMnh4pmSEfumtvYzENmAT0fi4F3lhvPDyC1J9t3nW3DMbvrvzo51H7KsbvmYpmF3AJ62Yl/ZxPUDyWVgd312Nn1pyeHho5t2jXfm9wC+uYmqJ9TrgZ210edXT+3bnt9cuj5tKOBVzPTuEgsu4C+xw/qZxrYP55vd/3J1ubg7rpY7oyAsn/daM28uz7lTDr7IqDsXrdjs++uTzmTzq4IKHvX3RJcYHfdmfRPJaDszK+Ody6yu25r80MJKPvyq+OdC+2u29r8TALKrvzqeOdiu+t8JAFlT2LHO+2uEySgZCx0vPP2V8372F0nREDJ18CW4a+Odw7edr5ntPukdtd5SUDJVqdtxajjnXbXmZGAkqvO1mErjC+Od9pdZz4CSqY6wevsmr843ml3ndkIKHnobxi2drl7sXxxvNPuOnMRULIwdL7o3NyenHK80+46MxFQctA/X1T9cfvkSUCfHe+0u848BJQMDJ8vamxZNjcuW3d6crzT7jqzEFC278n5ouaxzcFjoLc/B4532l1nDgLK9gwcmmyfL3q2x34ef7wTZiCgbE7/hNFjL3zkCSPHO0lCQNmawRNGj43P1sZl8z63vJ67CdZPliKgbMzwCaOh6Z3d452F450kJqBsy5MTRq2NTcc72QgBZV2RE0aOd7IRAsqqYieMHO9kGwSUNY0+YdQ9KOp4J1sgoKxo/AmjzgVGt8fqJasSUNYz4YRR7yokxzvZAAFlNVNOGDV265uP9z+UVQkoa+meB3pxwqh1YqnzDLAeASWdgfo1ZiK9OmE0eL4I1iagJDNwwr01F/7pCSPni9goASWVoRPu7ZNDT08YOV/ENgkoibQi+Opw59AJI/1kkwSUNNq74U8C+vyEkX6yRQJKEp0TQf0TRo2/cMKIXAgoKXSnLA0fA60/cMKIXAgoCfSmLA2ehb/f1wFPMiGgLGPgAGY7lgNRvd/b/yfyIKAsonMKvf6z9XkroM8eC1smoCyhuRX57Iz7uXFcdL1XCm8QUBYwZs6nM+7kT0CZX2/O5+3mx98P3A+yI6DMrrtl+XTKkjPuZE5AmVtvzufzKUvOuJM3AeV9A+fQu9Pln0xZsv9O1gSUt3VncVZ/tP6qv1UKOyCgvKu1G/7seKcz7uyRgPKmcVOWnHFnjwSU9/SmLD0JqDPu7JCA8pbOrvnzOZ/OuLNDAso7eieHns/5dPyT/RFQ3jAwPen5nE/YHQElbjCWz+d8wt4IKNP0p3z2l6kz55MPIaBM0p7yOXzG3ZxPPoWAMkXzTLo5n3w8AWWC7sTO2wfn3i3mLPEJBJTxOluWL6Ys6ScfQUAZrXds88WUJf3kEwgoYw2cXTdlic8moIw0GMvWbWu9MliLgDLOk931xlbpWq8MViOgPPfrSfPmfPLRBJSnxkyaN+eTTyagPDNu0rw5n3wwAeWJsZPmzfnkcwkow8ZPmrf/zscSUAZNmTQPn0pAGWLSPIwgoAx4MmneOp/QIqD0PZ00b84nNOUX0MN9Fs2X6Q/2mz/G0xNG5nxCS2YBPXZmIk5tqF/9p1on1c35hDGyCuiPr73f63/8c9Iz+N1/ppHFFwE15xOacgro33+2i/nzj8vnv/9rylP45X+iE8nbB91bHP+EppwCeurlskzq9ylP4bd/WG8zs/6z/TnQllNAD/0d9stG6KTDoEowqHtyyKR5GCVVQK+738XkXe7OU3zr3Xic9oRSMKQ/PcmkeRgjSUCvBysfgg29PEt/d/007TSSFgwoBibID90GdCQIaCef4YQK6DKGtzb7W6VA1/IBPbSTWe/LBybB24VfxLPjnd3jokDP0gG9Tt3sbjiW0+F/+2vyMzuJtIDnZ9xNmodfWTigpyelLLs6af5R/WQD05j6W6WvXpwetJk0D29YNqCDhy0rEw9elgYn0k97FkHoeBVQ++/wCwsH9L+9OED5v6cGdOh01MQjAYrQUTx23bu3AL+S00T6c3MppiJ0LkocrhrfhefHQIFfySygZ8vZzaAVyWdn4YFfShbQcvf7sr99jF+JFHgpL47vfbDO96Fw1REEJQpodfSyDGjg7Hv8pQjogN43ohXQlV4UZClNQOuzP5eAljvgsxT0FNqJF4ihCfKNyzZXe1mQoyQBLecf/f6vH1/LU+aHyYsgNx3riUv3tUkmxlghioFLNIduA34tSUBP1+nuVUDLBk6a+95QZ7PekI0U9OMLUQwuEjKwVQr8WpKAHq5XENUBvVQweiLpls3f/7O+JuloIv00z04YOUAMESkCWq8CUgf0Ur3gPnx9Kef18vpv95usSD/e8ylL+gkBKQJaX9B5C2jgIs7Kod50vRT0/gwHi4mM92rSvH7CdBkF9L6c3eWDezUtZzfe0KyuT/5+wNtW2IU/BI+B3lcmaS4MakHl8QQUZpboJFJZuTqgU5fwvBPQNxWPXffuLUBEqmlMX24BnfxOxHd24d/16hgoMF2aK5Gus+evAS1nwsdnMVWPPD0mLzVbOurFfV4xmiN+fhYeCEh6KWclfCFSPY3pehGnaUwjtSv5bB4oEJFoMZH7pZfvXMj5eG/520T6k4n0v9A9UTR8JRIQkmw5u7p+b1wH31iTpNFjl3K+0j/VXrjuHWaT2YLKt8VE7scELCbyytA17kO3ASGZBfShTKnl7F4b3to0ARTmkiqgx2pb8ecfb+3Dv+2juvHseKd+wkzSnYW/BrRcCCQ2jX4enxSO52fc9RPmkWxB5WriUWwd+fl8UDnM+YTFJQnosfH+7cfpZ35m9DkZcdURLC/RYiKNI5+Xvfj1NkE/piIWDoEEEi1n13wTj4mXr8/qYyIioJBAwvVAb8ILKs/gYyJSPHbdu7cAcxHQnXIMFJaX6Bhoc6c9uqDyHD6oIs7Cw+JSnYV/HAQ9xd/W+H07z0hrdFZegqUlCWg5j76ex1R+uOLFSPvuSCeTrYCu8oJg59JciXRqnQxebxrovkPSO9PeuJRzpZcE+5boWvjre7kX9WJ0c3/FCfZcEkvXQWrJVmO6r+U599ebZMclsXQdJJftcnYxu01JYek6SE9Ad6GwdB2sQED3oDXn09J1kEr6k0jFmvOY9lmTzlVHmgmJpAnosb2ohYDOqnfdu4JCGkkC2p4GKqDzGlx4aYfjhO1JEtDDqlcfNe0xLAIKa0m/oPKq9hiWRy0tXQdprbCg8pp2GRbHQGElAroDzsLDOhLtwgvool7MAwWWk2g90PWWUG7ba1sKS9fBClKtB7qRTdDdxqV5KefarwU+RpqJ9D++bmQbdEd16YzE0nWQXqKTSCbSz60XSkvXQXICmqeByfJm0ENqApqlwVjqJyRmObscPdld109IS0Az5IQRbIOA5seUJdiINQL68z8cA32DSfOwFYkCenISaS4u24TNSBPQg7Pwc7FwCGxHkoC23xGpKL7P/TVHyz43lq6DDUm1Iv2XckmRL9XH6/Uz+4AWg9Z+VfCpEi1nV14Jf6p23Y9rLk+fe2wEFLYk4YLKP77+9tf5mlO78FGPWnr7DlhfooB+f/xR78qvI/vYOAYKG5IwoLeF6X98XW9pu/xr4yw8bEfCgJ4P1abnj6+mMb3BPFDYjJTviVS/s8fJPNC3FM1LOXcwHshXovdEuibzVFzPIq35Dkm7CE5hMRHYhlQT6ct0Vm/scSqcRJqo96KfLGcHpJXuUs5vjys6TWOaZCCUJoDCFqQJ6N9/XqtZL02/3gZolgEdTKV+wgakWs7udD38edsUXU2G0XmysamfsD4LKm+cw52wXQK6bU64w4YJ6Ka1pnxm9tph/5YNaHnW6Lu3NQ4rWu/ekdmLh/0T0A1rXbVpNx42R0C3q7NuiILC1jgGulkWT4atE9DNElDYujTvibTim3i05RSg4nHss3cTsAUJ3xNpC7IKkGOgsHGJFlRe8fL3lrwK5Cw8bJst0C0zDxQ2Lckx0NOq7wXflFuDXIkEW5bmLHy1lPIGZBch18LDhiU6BmoifZTVmGC7BHTrzP+EzRLQzdNP2CpXIm3MwAvUT9goAd0WsYSMCOim2F2HnKwR0J//4RjoMCeMICuJAnpyEmkEU5YgL2kCenAWfgST5iEzSQL642s7oOtd17npNDUv21z7tQAjpFkPtCiXYzpe12Q6rHpd/JbL1F44ZOUXA4yQcDWmU7XrflxxD37LAW2uvKSgkIVEVyJ9O5c78r/9db7m1C58n7U/IT+JAvr98Ue9K7+OzWbJ6vOQoYQBvWx6lhuily3Rt5a2e5zRD3R4q1UqBq39qoDXEgb0kr5r8n58jR8EPXYSM7WhW42SgEKOEp1Eum56HqtVlU/hs0jd6VDTp5RuNUrF49hn7yZgq5JMY6pPvJ+K61mkY3R1+kuIW8W8LpM37bk2GyXHQCFDqSbSl+ms3tjjFDp4WTr1clkmddIp/e1WyVl4yE+6Szm/Pc7/BKcxHfo77FPfMXnDWWrOA3UAFLKQJqD1lmK9NH1wA/R2KLVl4vGALXep8A6ckJlUy9mdroc/b5uiIbeT+e3nnXYaadNhspgIZCajBZV3H1DL2UFmMgro3nfhzxZUhsykmUgf3Wtv2/dJpCv9hJwke1vjGRYQGZ7GNCnOm6+TfkJGEr4vfHUa6Q2DE+mnXYq0rTxt6sUAk6U5Bnq7BvPNlUDrEjdNrPKmAmprEzKX7CTS7W3l3lqJqfvmSlkvJuJ4J+Qu5Vn4Y7B6bXtZzs4Zd8he4mlMxzn25Me/lAFpvvKvmfMJ+Us/D/QkoGdXHcEuJA7o4c0t0J9/1I89xs7rbyVXhbcwhh1IGdDb0cv4tPpDcVtZtIid1t9IrQpvYQx7kCygc5xBOtRbnfd+ZjqNqWit/amgkKs0Ab3V8705TOVs0rK/5XTQ66ZnObM+w4n0xb2c7c+BzCS8EuntU0eH4va+yPft2FOGl3IOndrawMsCJksV0Lev47xub36p/3y0+JDfakwCCnuRJqAzrCTyWA/08ucjmsf81gMtHrvu3VuArGS0HmgjoI8zUTkuqOwYKOzEsgH9+d9e7F//74nHRG8LKt925a9yDKiz8LATCwd06F04KhPLVzrU4Ty0duGzOwZ6Ng8UdmLhXfjTk9NH5YykyfPpT/VzXR58y/Lg23y8enEbiVUroCu/FiBq6WOg15VAu1uhx9BlmNdpn1+qx9+2Xg8Tn2cztWpcyrn2SwGilj+JdGhPob8uKx+8IOla4/KZ6m6eJl8XuplcWUwEdiDBWfiBdeSjVyTdVrZ/mBji7eSqmv2pn5CzJNOYOgl954LOzpL0UyeYbqhXZtBD9lLNA6333N+9HP7crHHgqbYULP2E3GU0kX4OmyqWfkLmBBQgSEABggQ01Vde6wsDi0kZ0Or0z9tnkd6xWkAd74QdShjQ+wyk+HsivW2tjDnjDnuULqC3t/UIzN6cz0oVM+cTdilZQP/+s955b62HnNo6EXPVEexTsoD++HpbAOTxUXqrNMx177BTS68Hej/e+cjmzz8+K6BFY+UlBYU9WXxB5dsBz/ue+6ftwls8GXZr4V346yXwVUI/9CRS4e07YLcWPwZaJrRa9PgjpzEV93K2Pwd2INF6oNeEVhPp1zsAek4f0O7ypWYzwZ4kOQtfroO8ajfvBBSYT6JpTGVCV72Gs7ZCQDtfWEBhP5LNAz2tfRn8lWOgwHwSXgtfnoYPvZfcjJyFB+azeECbZ46O656CP5sHCsxp6YDeZ39W256HlRO6zpVI50dA0395YDELB/T0OPdcd/PwYRPp6y/aqCiwF8sG9O8/6533+1pMjdvWYDERYD5LXwtfXYTU/Ojy8X98VkAtZwc7tUZAV2RBZWA+6XbhN3Epkrf0AOaT/CTSurypHDCfxNOY1iZjwHySLGe3laVEBBSYU8r3hd8AAQXmI6AAQQIKECSgO/pyQFoCuqMvB6QloABBAgoQJKAAQQIKECSgS3yVFF8EWJ2ALvFFNv09AOYioAt8DQWFz5AsoOW7c/721/m47nvDJyibxZPhYyQKaPXmxmVA13xLuRQB9fYd8DnSBLTqZxnQdd+Uc/mAegM5+CBJAlquCfr7v358Ld8W6bDq4qBLZ61ovIWxgsLeJQno6fqGHlVAy5349d7dY+GqFY23f1dQ2L0kAT1c3xS+DmjjLeLTWzZqxS2dzc+A3UoR0Esyy23OOqCXTdD19uEXbVpxL2f7c2CnUgT05x/X80a3gJ52GtBiyHJfDlidgM743AIKn2WFXfjDTo+BFo9d9+4twC4lOolUbnPWAb1sj673HvGOgQLzSTWN6cstoOWc0PVm0jsLD8wnzZVI19nz14Aei2LFPXjzQIEZJb2Us7LihUiuRAJmlGgxkXLHfQP9dC08MKNky9nVCV01n1ZjAuZkQeX5v4QJoPAhBHSBr6Gf8BnSXIm03vJLHd4TCZhPoks5112H/kHagPkkC+h1PfrVCSgwnzTHQH983cAUppKAAvNJdhLpVJ+d3v27cgIfI+VZ+GPd0PXWEhFQYEaJpzEdV96TF1BgPunngZ52G1B1hg+TOKCHPW+BCih8mJQBPdTHQFecVi+gwHySBXQDZ5DOS7+lx3LPDWxRmoAeNzGH6SygwJwSXom0+iz686KR00/4OKkCuoXrOM8CCswpTUC3sZLIecnK6Sd8HuuBAgQJKEDQsgEtj35+b78n544n0gMfRkABggQUICi/Y6CHe4cDFzXlN1xguzIryrGzLTu1obMP1xvIwQfLKqC3dwaJHw2Ye7jewhg+WZqJ9K3rkA7RS+L//rNdzOux1WnPNfNw64rP+pxANlYJaPAk0qmXyzKpk65ymne4VT0VFD5V+oBethuDAR0o7+XJJh0GnXW4VT0dB4WPtXBAuyd93lnV7rK52V+K+TjtyeYcblHF86yg8KkWDmhvCuhVbEn6y3P1d9dP0zZnZxxuUbfz8THwYZbehT/N1s+NBbS4pbP5GfBRVjiJFLWpXfjiXs7258AHySigWzqJNHhod56nBrKR00T64WlMkw4ICCgwnzUC+vM/YtOYBifST5sSNWNAO08ooPB5EgW0fS4puhrTwDn9iQcHHAMF5pMmoIdiloD2nmjFxUSchQeSBLS7CMhb7zG3leXsCvNA4dMlCejhGrvjtXiHN/s56aUseqancCUSfLgUAf37z+vZ83rO+zHdgvQLnyovXAsPny3NPNDrXKMfX69nfC45nWUTtH7WaazGBMwnUUC/P/6od+XftoGAWg8UPlvCgN4uxfzxNbigcu9ZVw+oFenhoyUM6PlQbXr++Bo7CDq8stNqqzHdnlA/4WMlOol03VasF/6YuIDS3SYDCnywJNOY6hPvp+q6oYkLKD0MLY0noMBqUk2kL9N5+eOSzlNoBvxVuQ16j+8mjoECnyzdpZzfHhcRxacxHR5XvwsosLI0Aa3fPbM+ivnOLKbyqtCqmwIKrCzVcnanasOx3hR9Q9ni6268gAIry2lB5dqxuG3OCiiwpgwDet2N/7J2QKUYyDGg1934f/xfAQXWtWxA55j7Puh4fR4BBdaUaUCrNZpXDKh+AtkG9HpCX0CBNWV5DDROQIH5COiqzwPkTEBXfR4gZwK64tMAeUu0oPICJ5FCBBSYj4Cu+DRA3gR0tWcBcpf6GGj9HvFrEVBgPulPIoXf0WMOAgrMJ31AL9ug8RXp3zXLcPUTuFphGtOam6ACCsxnlYDmfRJJP4GKgAIEpQ/ozz9y34UHuEoe0HJS6Dtvy/keAQXms8ZE+ts7u69AQIH5rBHQ997X+C0CCswnfUDXO4N0FlBgTpazm/LouV4GsAsCOuXBmx4bkJqATnisggJNAjr+oQoKtCQK6Cn79UCreioo8JAkoH//mf2CylU9HQcFGpIE9Jj9ivRFFc+zggIPKQJaboCud/VmS3C4Rd3Ox8cAqSbSr/k2Hk2x4Ra3dDY/Az5eooCuePVmS2i4xb2c7c+BD5doFz7ngBZD5n9pQHYSnUTayCFQAQVmlCSgl3349d5HriUY0M6DBRQopZlI/+PrRnbiHQMF5pPoSqRLQTOeB+osPDDElUjjHmYeKNDjSqSRj3MlEtDlSqSxD3QtPNCRaCL9RvppNSZgRq5EGv9QE0CBFlciTXisfgJNiU4i5b2YyP3B+gk0pJrGlPGVSADD0kyk38yCdgIKzCfRSaTc54EC9AkoQJCAAgR5X3iAIAEFCBLQhR8I7JeALvxAYL8SBfSU+0kkAQV6LKi88AOB/bKg8sIPBPbLgsqLPg7Ys0QT6bdxJbyAAnOyoPKijwP2zILKiz4O2LNEJ5E2cgg0/rbGM78OYA+SBPSyD5/3gsoCCgxIM5H+x9eN7MQLKDCfRFciXQqa8zxQAQUGuFJN5xsAABFRSURBVBJpsUcBe+dKpMUeBeydK5EWexSwd4km0m+knwIKzMiVSAs9CNg/VyIt9CBg/xKdRMp6MREBBQalmsaU85VIAgoMSjORfjML2gkoMJ9EJ5Fyngeqn8AwAV3kMcAnENBFHgN8Au8Lv8hjgE8goAs8BPgMArrAQ4DPIKALPAT4DE4iLfAQ4DMI6OyPAD6FgM7+COBTpD4G+vef717Uebh3OLDIqIAC80l/EumtpZm6bw4ytaECCswnfUDfWJqp/d6ekaMBk4ern8BTK0xjCm+CXt/cs1HM67HVac8loMB8Vglo8CTSqZfLMqmTNmcFFJhPTgE99B849f3qBBSYT/qAhhdXHnxrpYnHAwQUmE/ygJYHLmNvcnx5ZH93/TRtc3bqcPUTeG6NifS//RV6YgEFtmWNgAbf43iNXXgBBZ5LH9D4dZwrnEQSUOC5nJazG57GNGl7duJw9RN4IaeADk6kn7ZBK6DAfHIKaH9Zp8knpAQUmE+qgB6rM+g//3hvKbtDp58LLyYioMALaQJabjpeA1ouBxKbBXqXcDk7/QReSRLQ68HL68meUzB8wZcyYNrjl3plwB4kCeixcayyXNEzupzd5JcioMCCUgT0sgHaOPJ52YtPtgnaI6DAfBJNpG9O1nxnSfrrksqNh7fbPOLFTRmufgIvJQpoc6d94uXrTbcTSPdN2EUDCvBSVgF9nIC/bYQKKLCeRMdAmzvth+gufLn/Xpb4+CiogALrSXUW/nEQ9BRejulwO5dfTouqCiqgwHqSBLScR1+3r/wwuAd/ieX92OehLqiAAutJcyXSqTUVMzgNtHUotS6ogALrSXQtfOMd3YPr0XfPRR2u5+IFFFhPstWY6pWUwvnsBrRaCnS5gCot8CsZLWfXPAZ6rt8TfrGATrzoE/hEGQW0PJnfPHz642vx2/9aKKCTL5sHPlBOAS0PpDZnQJ2mv8fSyOEGFh4BPk9OAb3OoG/uxp8WCmhVTwUFXssqoNeCNrdBy23S+QNa1dNxUOAX8gpo/73hj/MHtKjieVZQ4LXMAvquEcMt6nY+PgYYJKC9exSNOyoo8JyAdu9QtO6ooMBTAtr5+zffRgn4IALa+XsBBcYS0M7fF507CijwjIB27+AYKDCSgPbu4Sw8MI6A9u9iHigwioAO3MeVSMAYAjp0J9fCAyMI6OC9rMYE/JqADt/NBFDglwT0yf30E/gVAX12x02PA9gCAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUICg/AJ6KG6+TH+wgALzySygx6JtakMFFJhPVgH98bXo+sc/Jz2DgALzySmgf//ZLubPPy6f//6vKU8hoMB8cgroqZfLMqnfpzyFgALzySmgh/4O+2UjdNJhUAEF5pNRQC+bm996Nx6n7cMLKDCfjAJ62drs766fXp1G6p1yKgQUmI+AAgRlFFC78MC2ZBRQJ5GAbckpoMPTmPpbpS8IKDCfnAI6OJF+2qVIAgrMJ6eAVsVs++2vSc8goMB8sgpocykmi4kAa8ssoGfL2QGbkV9A3yKgwHwEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCDo4wIKMJ/ZGzX3E85p7W82sC+zN2ruJ1zcbvbr9zKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xV2ZfBNHWcvA9nLOAxkczIYyPZfYVcG39Rx9jKQvYzDQDYng4Fs/xUCbJSAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKEBQZgH9+Udx8W3tl/GWn3/845/Nz3Ic0Y+v5av+7a/HLXmOox5I82VnOpCry2i+3z/JciB//1nc3Yay6YHkFdBD/a1t/ubm5vIj0gholiOqfqJL95FkOY7Gr+u9O3kOpFL+f8l8II8frftQtj2QrAJ6vH9vm9twmTk0X32WI2r+kNcvO8txDG3u5DmQ2qHxL0GmAzkV3f8lGx9ITgEtd7d+/1f1Tf6y9osJuv7O3n8S8hzR8bZDdbi97DzHcR9I+S9C+fKzHUjl1PiHINeBHBvb0FdbH0hOAT3cvoWXb+o2t+d/qTrk1tzxzW9EjR3FYz2WLMdR/mNWv9jLkKqP8hxIpdoxeOz3ZjmQQ3c7c+sDySiglx+Q2zf3uNljyi9df8T//XEMNM8RnR6bAuX29Pdcx1H+St4GUm/4ZDqQq/LY+v+4BTTXgVwGUe0K3Gx+IBkFtPHzfvmw/X3OQ7nL+L1xEinPETV/kA/X39g8x9FUjSPrgZT/Btx3gHMdyKWX7f30zQ8ko4A2fnHbZ7KzcSx/GBqvPf8RHa67VdmP47adk/FALnn59jiCmOtALns336/7abe99c0PJK+A3o4vP45e5acd0LxHdPlZLzcKch/H8XbsMN+BVPu+zYBmOZBj8dt/qc+5V1ubmx9IRgE9tCa5bfB7OU4joNmPqN4+yHoch8aUmXwHct8VyHsgtzmf94JufiBZBfTx/dvk93KcVkDzHtHtqFTW42gHNNOBnKp/yY6ZD6Q8KVm92FNx+7d54wPJNqCd6WL5eBrQ7EZ06Wc1kpzHcZtMP/AvQT4DqQ+lPAtoNgO5Tye7/3BtfiDZBnSD/xiNs5st0NN9Qmve4zhX88vKk725DuQ2ezL3LdCmKpebH4iApraXgD76mfc4rupNn0wH0j93lOlAmqrj65sfSEYB3fwJuXF2chb+UDxm5eU8jlr165rnQB5zJbM/C99wyuP/SEYBPW19Stg4jdee74jKI4ePGc/5juOuGkKeAzkWbdkOpCWT/yMZBXTzFyWMk/2VSOfqkv5vrU/zHMdD9Yua50AGAprnQFqOeVzkllFAN39Z7Dh/534tfH9dh0zH0b8mNc+BDAQ0z4F0rjsqf8Y2P5CMArr5hVnGae6J5DmixmSTWp7juE/DenyY50DuHkcM8xxI4//IbcmarQ8kp4BufWnAcZoBzXJE9RJMTVmO4zqQ+/Sfausmz4HcPQKa50Ba/0eqXG59IDkFdOuLU4/TOhae44hOrf3F+0Xk2Y3jtjpr5XEeO8OB3DTOWec5kOb/kXp/feMDySqgG397lHFyf0+k5vtg3AOa4ThKjzcnuW/c5DmQ2rF15XiOA3kUNJOB5BXQbb9B3zid2RjZjaj5jkiNH/TsxlGpfmGbZ3czHchV6w0xMh3Iqf0P2nnjA8ksoADbIaAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAsoC/v6z+Mc/17njqn7+z7VfAWkJKAv40IAeim9rvwTSElAW8JkBPRUC+mkElCwIKFskoGRBQNkiASULAsoWCShBP74WX84//yiKyx+VQ/H7vy4RKX77q85d9cfxctPlb+4PPDU+r+/Yf67r0xXXJ2veseU09MTF9+qTy7Nd/up4f4bj4+8Gv1rrwS9e+NO7VH97/3s+goASVGbo8l8jcpeA/mfRDej/+doOy4/W542Atp+rSlNx71M/oD86T3wtYqm6XxnQ//dndcu3+19+GX7l3Qe/fOFP7iKgn0hACboE5d/rQNUdOhT/9rWq1COgD9V97qWqPn8EtPNcx8Yjv50HAtp5osbn1R3LgP732z3+1/2FfB985d0HD7zwez+f3UVAP5GAEnQtStmSU1Fv2ZX73NXubCugZVGOdQev9/leFevLuRnQ9nOVf3+9f/lB+Zy9gHae6Pr5t/or3Z7h+pAqjrev8uXpK28+uP/Cy1uuJT09vYtjoB9IQAkqM1Tl8vLRtS2H7qHNMjJ19o73rN23+coPGgFtPdfpfnzycsPjcOpD94lur+H+0a28VfLuH5Uf9L5a78H9F366j+3xyjt3EdAPJKAEPapTlvPb449zK6Df7vcuA/QI4/G6+fYIaOe57i69Ggpo94mOjzNCx+szlAH9fnuG+snr5+p9td6D+y/8cH9I3cn+XQT0AwkoQbdsnO81O3ROUZd/3LJT3/vYOUb4CGjnuR5/XwwGtPtEj69dnWS/xfI88FHvq/Ue3Hvh1Tn9l3cR0E8koARVHWl++NhKexrQxoZc847953qclBkOaOeJGl/pkbwXAW19tf6DhwLaNHQXAf1EAkpQO0PtOr4X0NtxymkBvf91tbU4OqC//6v/4N4Lb74cAeVOQAladAv0tsX3j38+OQaaeAu0sdff/4oC+rkElKChY6C/DOjYY6DHohO9CcdAq2cIHgOtbhjahe/M4xdQzgJKWD2/qFQHaERAW9OTvjQD2nquxgNPw7vw3Sc6Nq8orc/Cvwho+5X3Htx74eXJrPYMeQHlLKCE3aalP4I0IqCPGUT3UjWnuN+e6/HAcl9+KKDdJxqaB/oioO1XPjQPtL/pfPv6p+HGCugnElCCrudV6q3K2/U8vwzo7QKi8s9GF3vPVf91dUVnY8b9Q+eJWhcTlc/0i4B2X3n7wf0Xfj0o+72+73BjG5Pt+RQCStAlG//WXl9jTEAb84Eal7j3nusxh+lZQDtPNHQt/IuAdl75wLXwA3XsvvLuXapT9a6F/yQCSlB57PHUrNCogD5a9a1xx6Hnqv3XP5uXLDW0n2hoNaZXZ+HbX21gNabeC3/MZPr25C7V5fH24j+JgBJ0PXlzrcptm2tUQOttubpczWlMreeqe/WtcV68E9D2E90/b6xu93IaU/ur9Rf7HHjh1QpRX57f5VrQxnVU7J6AEtSYTbmp59raV2PPBJQgAQUBJUhAQUAJElAQUIIEFASUIAEFAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUI+v+uUMk+oNxj1wAAAABJRU5ErkJggg==" title alt width="672" /></p>
-<p><strong>Principal Component Analysis of data in the training data set.</strong></p>
+<p><strong>FIG1. Principal Component Analysis of data in the training data set.</strong></p>
 <p>The classification codes were removed, along with the first 7 elements of each observation. The remaining variables were subjected to the BoxCox transformation to approximate normal distribuion, then centred and scaled. Robust imputation was ensured by removing all columns with more than 5% missing values. The cummulative variance accounted for by the components calculated by PCA are shown. 95% of variance is accounted for by the first 26 components.</p>
 <p>Use the preprocess function to transform the training and test data</p>
 <pre class="r"><code>ppc2&lt;-preProcess(trainSet[,-ncol(trainSet)],method=c(&quot;BoxCox&quot;,&quot;center&quot;,&quot;scale&quot;,&quot;pca&quot;),pcaComp=numComp)
 reduced_trSet&lt;-predict(ppc2,trainSet[,-ncol(trainSet)])
-reduced_trSet[ncol(reduced_trSet)+1]&lt;-trainSet[,ncol(trainSet)]
+reduced_trSet[,ncol(reduced_trSet)+1]&lt;-trainSet[,ncol(trainSet)]
 reduced_testSet&lt;-predict(ppc2,testSet[,-ncol(testSet)])
-reduced_testSet[ncol(reduced_testSet)+1]&lt;-testSet[,ncol(testSet)]</code></pre>
-<p>Define a function to automate the running and comparisons of a range of machine learning methods, ustilising the <em>train</em> method of the <strong>caret</strong> package.</p>
+reduced_testSet[,ncol(reduced_testSet)+1]&lt;-testSet[,ncol(testSet)]
+auto_testPCA&lt;-predict(ppc2,auto_testStrip_2[,-ncol(auto_testStrip_2)])</code></pre>
+</div>
+<div id="test-the-performance-of-a-set-of-machine-learning-algorithms-applied-to-the-test-datset." class="section level3">
+<h3>Test the performance of a set of machine learning algorithms applied to the test datset.</h3>
+<div id="benchmark" class="section level4">
+<h4>Benchmark</h4>
+<pre><code>The benchmark level of discrimination is determined by randomising the vector of class values for the training set: maintaining the proportions of the classes but effectively randomly selecting them. </code></pre>
+<pre class="r"><code>   class&lt;-reduced_trSet[,ncol(reduced_trSet)]
+   random&lt;-sample(class)
+   matx&lt;-confusionMatrix(random,class)
+   v&lt;-paste(capture.output(matx),collapse=&quot;\n&quot;)
+   cat(v)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1112  747  704  613  730
+##          B  729  540  486  428  475
+##          C  721  444  409  387  435
+##          D  638  429  365  389  431
+##          E  706  498  432  435  454
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.2114          
+##                  95% CI : (0.2046, 0.2183)
+##     No Information Rate : 0.2843          
+##     P-Value [Acc &gt; NIR] : 1.0000          
+##                                           
+##                   Kappa : 0.0026          
+##  Mcnemar's Test P-Value : 0.9255          
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity           0.28469  0.20316  0.17070  0.17274  0.17980
+## Specificity           0.71580  0.80883  0.82479  0.83779  0.81529
+## Pos Pred Value        0.28469  0.20316  0.17070  0.17274  0.17980
+## Neg Pred Value        0.71580  0.80883  0.82479  0.83779  0.81529
+## Prevalence            0.28434  0.19349  0.17442  0.16394  0.18381
+## Detection Rate        0.08095  0.03931  0.02977  0.02832  0.03305
+## Detection Prevalence  0.28434  0.19349  0.17442  0.16394  0.18381
+## Balanced Accuracy     0.50024  0.50599  0.49775  0.50526  0.49754</code></pre>
+<p>This demonstates an overall accuaracy of <strong>0.211</strong> with an average ‘by class’ balanced accuracy of <strong>1</strong>.</p>
+<p>Define a function to automate the running and comparisons of a range of machine learning methods, utilising the <em><strong>train()</strong></em> method of the <strong>caret</strong> package. The algorithms are assessed in terms of the overall and ‘by class’ balanced accuracy, and by the time required to complete the algorithm.</p>
 <pre class="r"><code>runTrain&lt;-function(data,method,seed=6543){
+   library(caret)
    set.seed(seed)
 # shuffle the data by row  
    data &lt;- data[sample(nrow(data)),]
@@ -140,12 +189,20 @@ reduced_testSet[ncol(reduced_testSet)+1]&lt;-testSet[,ncol(testSet)]</code></pre
 # save the confusion Matrix
    save(matx,file=paste(method,&quot;.cfm&quot;,sep=&quot;&quot;))
 # construct a return string
-   returnTxt&lt;-paste(&quot;\nmodel =&quot;,file,&quot;length of processing =&quot;,sprintf(&quot;%.1f&quot;,trainedModel$times$everything[&quot;elapsed&quot;]),&quot; seconds&quot;,sep=&quot; &quot;)
+   returnTxt&lt;-paste(&quot;\n====================================================\n&quot;,&quot;model =&quot;,file,&quot;length of processing =&quot;,sprintf(&quot;%.1f&quot;,trainedModel$times$everything[&quot;elapsed&quot;]),&quot; seconds\n&quot;,sep=&quot; &quot;)
    returnTxt&lt;-paste(returnTxt,&quot;&quot;,&quot;PERFORMANCE&quot;,&quot;===========&quot;,&quot;&quot;,sep=&quot;\n&quot;) 
-   v&lt;-paste(capture.output(matx),collapse=&quot;\n&quot;)
-
-   returnTxt&lt;-paste(returnTxt,v)
+   returnTxt&lt;-paste(returnTxt,&quot;Overall accuracy\n&quot;,round(matx$overall['Accuracy'],3),&quot;\n&quot;,&quot;By Class Balanced Accuracy&quot;,&quot;\n&quot;,sep=&quot;&quot;)
    cat(returnTxt)
+   cat(paste(names(matx$byClass[,8]),sep=&quot;\t&quot;)); cat(&quot;\n&quot;)
+   cat(paste(round(matx$byClass[,8],3),sep=&quot;\t    \t&quot;)); cat(&quot;\n&quot;)
+   
+  # returnTxt&lt;-paste(returnTxt,&quot;Balanced Accuracy by class&quot;,balNames,&quot;\n&quot;,balVals,&quot;\n&quot;,sep=&quot;&quot;)
+    
+
+  # v&lt;-paste(capture.output(matx),collapse=&quot;\n&quot;)
+
+ #  returnTxt&lt;-paste(returnTxt,v)
+   #cat(returnTxt)
 }</code></pre>
 <pre class="r"><code>#methods&lt;-c(&quot;rpart&quot;,&quot;lda&quot;,&quot;svmRadial&quot;,&quot;rf&quot;)
 methods&lt;-c(&quot;lda&quot;,&quot;lda&quot;)
@@ -156,6 +213,7 @@ for(i in seq_along(methods)){
     summy&lt;-runTrain(reduced_trSet,methods[i],seed=seeds[i])  
     load(paste(methods[i],&quot;.cfm&quot;,sep=&quot;&quot;))
     if(matx$overall['Accuracy']&gt;best){
+      
        best&lt;-matx$overall['Accuracy']
        meth&lt;-methods[i]
     }
@@ -163,80 +221,87 @@ for(i in seq_along(methods)){
 }</code></pre>
 <pre><code>## Loading required package: MASS</code></pre>
 <pre><code>## 
-## model = lda.mdl length of processing = 9.4  seconds
+## ====================================================
+##  model = lda.mdl length of processing = 8.4  seconds
+## 
 ## 
 ## PERFORMANCE
 ## ===========
-##  Confusion Matrix and Statistics
+## Overall accuracy
+## 0.54
+## By Class Balanced Accuracy
+## Class: A Class: B Class: C Class: D Class: E
+## 0.74 0.664 0.686 0.725 0.715
 ## 
-##           Reference
-## Prediction   A   B   C   D   E
-##          A 645 149 172  59  65
-##          B  66 291  61  67 111
-##          C  95 105 296  66  78
-##          D 149  83  64 327  81
-##          E  21  36   6  44 296
+## ====================================================
+##  model = lda.mdl length of processing = 8.2  seconds
 ## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.5403          
-##                  95% CI : (0.5235, 0.5571)
-##     No Information Rate : 0.2843          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.417           
-##  Mcnemar's Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.6609  0.43825  0.49416  0.58082  0.46910
-## Specificity            0.8189  0.88985  0.87862  0.86864  0.96181
-## Pos Pred Value         0.5917  0.48826  0.46250  0.46449  0.73449
-## Neg Pred Value         0.8587  0.86852  0.89151  0.91352  0.88944
-## Prevalence             0.2843  0.19342  0.17448  0.16400  0.18380
-## Detection Rate         0.1879  0.08477  0.08622  0.09525  0.08622
-## Detection Prevalence   0.3175  0.17361  0.18643  0.20507  0.11739
-## Balanced Accuracy      0.7399  0.66405  0.68639  0.72473  0.71545
-## model = lda.mdl length of processing = 8.3  seconds
 ## 
 ## PERFORMANCE
 ## ===========
-##  Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction   A   B   C   D   E
-##          A 619 157 180  39  66
-##          B  83 256  50  50 110
-##          C  89 133 294  76  80
-##          D 159  80  64 353  75
-##          E  26  38  11  45 300
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.5307          
-##                  95% CI : (0.5139, 0.5475)
-##     No Information Rate : 0.2843          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4057          
-##  Mcnemar's Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.6342  0.38554  0.49082   0.6270  0.47544
-## Specificity            0.8201  0.89419  0.86662   0.8683  0.95717
-## Pos Pred Value         0.5834  0.46630  0.43750   0.4829  0.71429
-## Neg Pred Value         0.8495  0.85853  0.88953   0.9223  0.89014
-## Prevalence             0.2843  0.19342  0.17448   0.1640  0.18380
-## Detection Rate         0.1803  0.07457  0.08564   0.1028  0.08739
-## Detection Prevalence   0.3091  0.15992  0.19575   0.2129  0.12234
-## Balanced Accuracy      0.7272  0.63986  0.67872   0.7476  0.71630</code></pre>
-<pre class="r"><code>outtext&lt;-paste(&quot;\nThe best method tried is &quot;,meth,&quot; with an accuracy of &quot;,best,&quot;.\n\n&quot;)
+## Overall accuracy
+## 0.531
+## By Class Balanced Accuracy
+## Class: A Class: B Class: C Class: D Class: E
+## 0.727 0.64 0.679 0.748 0.716</code></pre>
+<pre class="r"><code>outtext&lt;-paste(&quot;\nThe best method tried is &quot;,meth,&quot; with an accuracy of &quot;,round(best,3),&quot;.\n\n&quot;)
 cat(outtext)</code></pre>
 <pre><code>## 
-## The best method tried is  lda  with an accuracy of  0.540343722691523 .</code></pre>
+## The best method tried is  lda  with an accuracy of  0.54 .</code></pre>
+</div>
+</div>
+<div id="out-of-sample-performance-of-the-lda-method" class="section level3">
+<h3>Out of sample performance of the lda method</h3>
+<p>The best scoring method ( lda ) is applied to the test data. From this determine the <em><em>out of sample error</em></em> for the model.</p>
+<pre class="r"><code>bestMdlFile = paste(meth,&quot;.mdl&quot;,sep=&quot;&quot;)
+load(bestMdlFile)
+
+oof&lt;-reduced_testSet[,-ncol(reduced_testSet)]
+predicted&lt;-predict(trainedModel,newdata=oof)
+testKeys&lt;-testSet[,ncol(testSet)]
+falsecalls&lt;-sum(predicted != testKeys)
+matx&lt;-confusionMatrix(predicted,testKeys)
+
+v&lt;-paste(capture.output(matx),collapse=&quot;\n&quot;)
+
+cat(v)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1108  257  304   58  108
+##          B  113  476  111  107  203
+##          C  197  225  484  144  136
+##          D  216  117  113  575  128
+##          E   40   64   14   80  507
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.5353          
+##                  95% CI : (0.5224, 0.5481)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.4109          
+##  Mcnemar's Test P-Value : &lt; 2.2e-16       
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.6619  0.41791  0.47173  0.59647  0.46858
+## Specificity            0.8274  0.88748  0.85553  0.88336  0.95878
+## Pos Pred Value         0.6038  0.47129  0.40809  0.50044  0.71915
+## Neg Pred Value         0.8602  0.86400  0.88466  0.91786  0.88900
+## Prevalence             0.2845  0.19354  0.17434  0.16381  0.18386
+## Detection Rate         0.1883  0.08088  0.08224  0.09771  0.08615
+## Detection Prevalence   0.3118  0.17162  0.20153  0.19524  0.11980
+## Balanced Accuracy      0.7446  0.65270  0.66363  0.73992  0.71368</code></pre>
+<p>The out of sample error determined for this model (1 - accuracy, where accuracy reflects the performance of the model applied to the test set ) is <strong>0.465</strong> .</p>
+<p>Application of this model to the auto_test data set gives the following prediction:</p>
+<pre class="r"><code>predicted&lt;-predict(trainedModel,newdata=auto_testPCA)
+predicted</code></pre>
+<pre><code>##  [1] B A A A A C D D A A A A E A E B A D D B
+## Levels: A B C D E</code></pre>
 </div>
 
 
