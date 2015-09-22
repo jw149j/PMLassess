@@ -60,7 +60,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 <div id="executive-summary." class="section level3">
 <h3>Executive Summary.</h3>
-<p>A group of volunteers were trained to perform a series of supervised exercises with weights, involving a number of defined ‘mistakes’ in technique. Each performance was recorded using a series of accelerometers attached to a number of locations on the body, and a range of values recorded. The purpose of this analysis is to determine a machine learning model which can consistently determine the mode of exercise (i.e. which specific ‘mistake’ is being performed) from a novel set of accelerometer readings. The experiment is described in detail <a href="http://http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf">here</a>. The analysis concluded that a random forest model produced a good predictive model, but required major system resources ( as indicated by time to complete the model building).</p>
+<p>A group of volunteers were trained to perform a series of supervised exercises with weights, involving a number of defined ‘mistakes’ in technique. Each performance was recorded using a series of accelerometers attached to a number of locations on the body, and a range of values recorded. The purpose of this analysis is to determine a machine learning model which can consistently determine the mode of exercise (i.e. which specific ‘mistake’ is being performed) from a novel set of accelerometer readings. The experiment is described in detail <a href="http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201">here</a>. The analysis concluded that a random forest model produced a good predictive model, but required major system resources ( as indicated by time to complete the model building).</p>
 <p><strong>Load the required packages for this analysis</strong></p>
 <pre class="r"><code>library(digest)
 library(caret)
@@ -221,7 +221,7 @@ for(i in seq_along(methods)){
 <pre><code>## Loading required package: MASS</code></pre>
 <pre><code>## 
 ## ====================================================
-##  model = lda.mdl length of processing = 8.0  seconds
+##  model = lda.mdl length of processing = 8.4  seconds
 ## 
 ## 
 ## PERFORMANCE
@@ -233,7 +233,7 @@ for(i in seq_along(methods)){
 ## 0.74 0.664 0.686 0.725 0.715
 ## 
 ## ====================================================
-##  model = lda.mdl length of processing = 7.8  seconds
+##  model = lda.mdl length of processing = 8.0  seconds
 ## 
 ## 
 ## PERFORMANCE
@@ -243,10 +243,9 @@ for(i in seq_along(methods)){
 ## By Class Balanced Accuracy
 ## Class: A Class: B Class: C Class: D Class: E
 ## 0.727 0.64 0.679 0.748 0.716</code></pre>
-<pre class="r"><code>outtext&lt;-paste(&quot;\nThe best method tried is &quot;,meth,&quot; with an accuracy of &quot;,round(best,3),&quot;.\n\n&quot;)
+<pre class="r"><code>outtext&lt;-paste(&quot;The best method tried is &quot;,meth,&quot; with an accuracy of &quot;,round(best,3),&quot;.\n&quot;)
 cat(outtext)</code></pre>
-<pre><code>## 
-## The best method tried is  lda  with an accuracy of  0.54 .</code></pre>
+<pre><code>## The best method tried is  lda  with an accuracy of  0.54 .</code></pre>
 </div>
 <div id="out-of-sample-performance-of-the-lda-method" class="section level2">
 <h2>Out of sample performance of the lda method</h2>

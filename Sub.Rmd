@@ -7,7 +7,7 @@ output: html_document
 ### Executive Summary.
 
 A group of volunteers were trained to perform a series of supervised exercises with weights, involving a number of defined 'mistakes' in technique. Each performance was recorded using a series of accelerometers attached to a number of locations on the body, and a range of values recorded. The purpose of this analysis is to determine a machine learning model which can consistently determine the mode of exercise (i.e. which specific 'mistake' is being performed) from a novel set of accelerometer readings.
-The experiment is described in detail [here](http://http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf).
+The experiment is described in detail [here](http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201).
 The analysis concluded that a random forest model produced a good predictive model, but required major system resources ( as indicated by time to complete the model building).   
 
 
@@ -169,8 +169,7 @@ cat(paste(round(matx$byClass[,8],3),sep="\t    \t")); cat("\n")
 ```
 
 ```{r}
-#methods<-c("rpart","lda","svmRadial","rf")
-methods<-c("lda","lda")
+methods<-c("rpart","lda","svmRadial","rf")
 best<-0;
 meth<-""
 seeds<-c(1496,1776,1812,1969)
@@ -185,7 +184,7 @@ for(i in seq_along(methods)){
     summy
 }
 
-outtext<-paste("The best method tried is ",meth," with an accuracy of ",round(best,3),".\n"")
+outtext<-paste("The best method tried is ",meth," with an accuracy of ",round(best,3),".\n")
 cat(outtext)
 ```
 
