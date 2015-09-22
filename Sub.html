@@ -58,18 +58,19 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </div>
 
 
-<p>Load the required packages for this analysis</p>
+<div id="executive-summary." class="section level3">
+<h3>Executive Summary.</h3>
+<p>A group of volunteers were trained to perform a series of supervised exercises with weights, involving a number of defined ‘mistakes’ in technique. Each performance was recorded using a series of accelerometers attached to a number of locations on the body, and a range of values recorded. The purpose of this analysis is to determine a machine learning model which can consistently determine the mode of exercise (i.e. which specific ‘mistake’ is being performed) from a novel set of accelerometer readings. The experiment is described in detail <a href="http://http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf">here</a>. The analysis concluded that a random forest model produced a good predictive model, but required major system resources ( as indicated by time to complete the model building).</p>
+<p><strong>Load the required packages for this analysis</strong></p>
 <pre class="r"><code>library(digest)
 library(caret)
 library(randomForest)
+library(kernlab)
 set.seed(91295)</code></pre>
-<div id="executive-summary." class="section level3">
-<h3>Executive Summary.</h3>
-<p>A group of volunteers were trained to perform a series of supervised exercises with weights, involving a number of defined ‘mistakes’ in technique. Each performance was recorded using a series of accelerometers attached to a number of locations on the body, and a range of values recorded. The purpose of this analysis is to develop a machine learning model which can consistently determine the mode of exercise (i.e. which specific ‘mistake’ is being performed) from a novel set of accelerometer readings. The experiment is described in detail <a href="http://groupware.les.inf.puc-rio.br/">here</a>. The analysis concluded that a random forest model produced a good predictive model, but required major system resources (as indicated by time to complete the model building).</p>
 </div>
-<div id="obtain-and-load-the-data" class="section level3">
-<h3>Obtain and Load the Data</h3>
-<p>The correct data sets are required for this analysis:<br />1) a set of &gt;19000 instances from <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a><br />2) a set of test instances for automatic evaluation of the model <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a> (auto_TestSet).</p>
+<div id="obtain-and-load-the-data" class="section level2">
+<h2>Obtain and Load the Data</h2>
+<p>The correct data sets are required for this analysis:<br />1) a set of data &gt;19000 instances from <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a></a><br />2) a set of test instances for <em>automatic</em> <strong>evaluation of the model</strong> <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a>)</a> (auto_TestSet).</p>
 <pre class="r"><code>library(digest)
 if(file.exists(&quot;pml-training.csv&quot;)&amp;&amp;(identical(digest(&quot;pml-training.csv&quot;,file=TRUE),&quot;56926c78af383dcdc2060407942e52e9&quot;))){   
 } else{  download.file(&quot;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;,&quot;pml-training.csv&quot;)}
@@ -80,8 +81,8 @@ if(file.exists(&quot;pml-testing.csv&quot;)&amp;&amp;(identical(digest(&quot;pml
 <pre class="r"><code>baseData&lt;-read.csv(&quot;pml-training.csv&quot;,na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;,&quot;&quot;))
 auto_TestSet&lt;-read.csv(&quot;pml-testing.csv&quot;,na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;,&quot;&quot;))</code></pre>
 </div>
-<div id="clean-and-preprocess-the-data-sets." class="section level3">
-<h3>Clean and Preprocess the Data Sets.</h3>
+<div id="clean-and-preprocess-the-data-sets." class="section level2">
+<h2>Clean and Preprocess the Data Sets.</h2>
 <p>Determine the cleaning and pre-processing required of the data sets:</p>
 <ul>
 <li><p>Fields 1-7 are codes for participants and other data which can produce spurious overfitting<br /> + remove from in the training data and test set</p></li>
@@ -121,11 +122,11 @@ reduced_testSet&lt;-predict(ppc2,testSet[,-ncol(testSet)])
 reduced_testSet[,ncol(reduced_testSet)+1]&lt;-testSet[,ncol(testSet)]
 auto_testPCA&lt;-predict(ppc2,auto_testStrip_2[,-ncol(auto_testStrip_2)])</code></pre>
 </div>
-<div id="test-the-performance-of-a-set-of-machine-learning-algorithms-applied-to-the-test-datset." class="section level3">
-<h3>Test the performance of a set of machine learning algorithms applied to the test datset.</h3>
-<div id="benchmark" class="section level4">
-<h4>Benchmark</h4>
-<pre><code>The benchmark level of discrimination is determined by randomising the vector of class values for the training set: maintaining the proportions of the classes but effectively randomly selecting them. </code></pre>
+<div id="test-the-performance-of-a-set-of-machine-learning-algorithms-applied-to-the-test-datset." class="section level2">
+<h2>Test the performance of a set of machine learning algorithms applied to the test datset.</h2>
+<div id="benchmark" class="section level3">
+<h3>Benchmark</h3>
+<p>The benchmark level of discrimination is determined by randomising the vector of class values for the training set: maintaining the proportions of the classes but effectively randomly selecting them.</p>
 <pre class="r"><code>   class&lt;-reduced_trSet[,ncol(reduced_trSet)]
    random&lt;-sample(class)
    matx&lt;-confusionMatrix(random,class)
@@ -162,7 +163,11 @@ auto_testPCA&lt;-predict(ppc2,auto_testStrip_2[,-ncol(auto_testStrip_2)])</code>
 ## Detection Rate        0.08095  0.03931  0.02977  0.02832  0.03305
 ## Detection Prevalence  0.28434  0.19349  0.17442  0.16394  0.18381
 ## Balanced Accuracy     0.50024  0.50599  0.49775  0.50526  0.49754</code></pre>
-<p>This demonstates an overall accuaracy of <strong>0.211</strong> with an average ‘by class’ balanced accuracy of <strong>1</strong>.</p>
+<p>This demonstates an overall accuaracy of <strong>0.211</strong> with an average ‘by class’ balanced accuracy of <strong>0.501</strong>.</p>
+</div>
+</div>
+<div id="test-a-panel-of-machine-learning-algorithms" class="section level2">
+<h2>Test a panel of machine learning algorithms</h2>
 <p>Define a function to automate the running and comparisons of a range of machine learning methods, utilising the <em><strong>train()</strong></em> method of the <strong>caret</strong> package. The algorithms are assessed in terms of the overall and ‘by class’ balanced accuracy, and by the time required to complete the algorithm.</p>
 <pre class="r"><code>runTrain&lt;-function(data,method,seed=6543){
    library(caret)
@@ -188,21 +193,15 @@ auto_testPCA&lt;-predict(ppc2,auto_testStrip_2[,-ncol(auto_testStrip_2)])</code>
    matx&lt;-confusionMatrix(predicted,TeKey)
 # save the confusion Matrix
    save(matx,file=paste(method,&quot;.cfm&quot;,sep=&quot;&quot;))
+# save the confusion Matrix
+save(matx,file=paste(method,&quot;.cfm&quot;,sep=&quot;&quot;))
 # construct a return string
-   returnTxt&lt;-paste(&quot;\n====================================================\n&quot;,&quot;model =&quot;,file,&quot;length of processing =&quot;,sprintf(&quot;%.1f&quot;,trainedModel$times$everything[&quot;elapsed&quot;]),&quot; seconds\n&quot;,sep=&quot; &quot;)
-   returnTxt&lt;-paste(returnTxt,&quot;&quot;,&quot;PERFORMANCE&quot;,&quot;===========&quot;,&quot;&quot;,sep=&quot;\n&quot;) 
-   returnTxt&lt;-paste(returnTxt,&quot;Overall accuracy\n&quot;,round(matx$overall['Accuracy'],3),&quot;\n&quot;,&quot;By Class Balanced Accuracy&quot;,&quot;\n&quot;,sep=&quot;&quot;)
-   cat(returnTxt)
-   cat(paste(names(matx$byClass[,8]),sep=&quot;\t&quot;)); cat(&quot;\n&quot;)
-   cat(paste(round(matx$byClass[,8],3),sep=&quot;\t    \t&quot;)); cat(&quot;\n&quot;)
-   
-  # returnTxt&lt;-paste(returnTxt,&quot;Balanced Accuracy by class&quot;,balNames,&quot;\n&quot;,balVals,&quot;\n&quot;,sep=&quot;&quot;)
-    
-
-  # v&lt;-paste(capture.output(matx),collapse=&quot;\n&quot;)
-
- #  returnTxt&lt;-paste(returnTxt,v)
-   #cat(returnTxt)
+returnTxt&lt;-paste(&quot;\n====================================================\n&quot;,&quot;model =&quot;,file,&quot;length of processing =&quot;,sprintf(&quot;%.1f&quot;,trainedModel$times$everything[&quot;elapsed&quot;]),&quot; seconds\n&quot;,sep=&quot; &quot;)
+returnTxt&lt;-paste(returnTxt,&quot;&quot;,&quot;PERFORMANCE&quot;,&quot;===========&quot;,&quot;&quot;,sep=&quot;\n&quot;)
+returnTxt&lt;-paste(returnTxt,&quot;Overall accuracy\n&quot;,round(matx$overall['Accuracy'],3),&quot;\n&quot;,&quot;By Class Balanced Accuracy&quot;,&quot;\n&quot;,sep=&quot;&quot;)
+cat(returnTxt)
+cat(paste(names(matx$byClass[,8]),sep=&quot;\t&quot;)); cat(&quot;\n&quot;)
+cat(paste(round(matx$byClass[,8],3),sep=&quot;\t    \t&quot;)); cat(&quot;\n&quot;)
 }</code></pre>
 <pre class="r"><code>#methods&lt;-c(&quot;rpart&quot;,&quot;lda&quot;,&quot;svmRadial&quot;,&quot;rf&quot;)
 methods&lt;-c(&quot;lda&quot;,&quot;lda&quot;)
@@ -222,7 +221,7 @@ for(i in seq_along(methods)){
 <pre><code>## Loading required package: MASS</code></pre>
 <pre><code>## 
 ## ====================================================
-##  model = lda.mdl length of processing = 8.4  seconds
+##  model = lda.mdl length of processing = 8.0  seconds
 ## 
 ## 
 ## PERFORMANCE
@@ -234,7 +233,7 @@ for(i in seq_along(methods)){
 ## 0.74 0.664 0.686 0.725 0.715
 ## 
 ## ====================================================
-##  model = lda.mdl length of processing = 8.2  seconds
+##  model = lda.mdl length of processing = 7.8  seconds
 ## 
 ## 
 ## PERFORMANCE
@@ -249,9 +248,8 @@ cat(outtext)</code></pre>
 <pre><code>## 
 ## The best method tried is  lda  with an accuracy of  0.54 .</code></pre>
 </div>
-</div>
-<div id="out-of-sample-performance-of-the-lda-method" class="section level3">
-<h3>Out of sample performance of the lda method</h3>
+<div id="out-of-sample-performance-of-the-lda-method" class="section level2">
+<h2>Out of sample performance of the lda method</h2>
 <p>The best scoring method ( lda ) is applied to the test data. From this determine the <em><em>out of sample error</em></em> for the model.</p>
 <pre class="r"><code>bestMdlFile = paste(meth,&quot;.mdl&quot;,sep=&quot;&quot;)
 load(bestMdlFile)

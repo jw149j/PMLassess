@@ -4,7 +4,15 @@ author: "JMW0103"
 date: "Thursday, September 17, 2015"
 output: html_document
 ---
-Load the required packages for this analysis
+### Executive Summary.
+
+A group of volunteers were trained to perform a series of supervised exercises with weights, involving a number of defined 'mistakes' in technique. Each performance was recorded using a series of accelerometers attached to a number of locations on the body, and a range of values recorded. The purpose of this analysis is to determine a machine learning model which can consistently determine the mode of exercise (i.e. which specific 'mistake' is being performed) from a novel set of accelerometer readings.
+The experiment is described in detail [here](http://http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf).
+The analysis concluded that a random forest model produced a good predictive model, but required major system resources ( as indicated by time to complete the model building).   
+
+
+
+**Load the required packages for this analysis**
 ```{r warning=FALSE, message=FALSE }
 library(digest)
 library(caret)
@@ -147,19 +155,22 @@ runTrain<-function(data,method,seed=6543){
    matx<-confusionMatrix(predicted,TeKey)
 # save the confusion Matrix
    save(matx,file=paste(method,".cfm",sep=""))
+# save the confusion Matrix
+save(matx,file=paste(method,".cfm",sep=""))
 # construct a return string
-   returnTxt<-paste("\nmodel =",file,"length of processing =",sprintf("%.1f",trainedModel$times$everything["elapsed"])," seconds",sep=" ")
-   returnTxt<-paste(returnTxt,"","PERFORMANCE","===========","",sep="\n") 
-   v<-paste(capture.output(matx),collapse="\n")
-
-   returnTxt<-paste(returnTxt,v)
-   cat(returnTxt)
+returnTxt<-paste("\n====================================================\n","model =",file,"length of processing =",sprintf("%.1f",trainedModel$times$everything["elapsed"])," seconds\n",sep=" ")
+returnTxt<-paste(returnTxt,"","PERFORMANCE","===========","",sep="\n")
+returnTxt<-paste(returnTxt,"Overall accuracy\n",round(matx$overall['Accuracy'],3),"\n","By Class Balanced Accuracy","\n",sep="")
+cat(returnTxt)
+cat(paste(names(matx$byClass[,8]),sep="\t")); cat("\n")
+cat(paste(round(matx$byClass[,8],3),sep="\t    \t")); cat("\n")
 }
+
 ```
 
 ```{r}
-methods<-c("rpart","lda","svmRadial","rf")
-#Rafmethods<-c("lda","lda")
+#methods<-c("rpart","lda","svmRadial","rf")
+methods<-c("lda","lda")
 best<-0;
 meth<-""
 seeds<-c(1496,1776,1812,1969)
@@ -174,7 +185,7 @@ for(i in seq_along(methods)){
     summy
 }
 
-outtext<-paste("\nThe best method tried is ",meth," with an accuracy of ",round(best,3),".\n\n")
+outtext<-paste("The best method tried is ",meth," with an accuracy of ",round(best,3),".\n"")
 cat(outtext)
 ```
 
