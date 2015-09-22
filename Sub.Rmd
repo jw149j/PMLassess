@@ -16,7 +16,7 @@ set.seed(91295)
 
 The correct data sets are required for this analysis:  
 1) a set of data >19000 instances from  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv**   
-2) a set of test instances for _automatic_  __evaluation of the model__  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv**
+2) a set of test instances for _automatic_  __evaluation of the model__  **https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv** (auto_TestSet).
 
 ```{r message=FALSE,results='hide'}
 library(digest)
@@ -30,10 +30,10 @@ Manual inspection of the training data set indicates 3 distinct labels for data 
 Read the data sets into data frames, using the above strings to indicate NA in the dataframe.  
 ```{r}
 baseData<-read.csv("pml-training.csv",na.strings=c("NA","#DIV/0!",""))
-testData<-read.csv("pml-testing.csv",na.strings=c("NA","#DIV/0!",""))
+auto_TestSet<-read.csv("pml-testing.csv",na.strings=c("NA","#DIV/0!",""))
 ```
 
-# Clean and Preproces the Data Sets.
+# Clean and Preprocess the Data Sets.
 
 Determine the cleaning and pre-processing drequired of the data sets:
 
@@ -43,22 +43,31 @@ Determine the cleaning and pre-processing drequired of the data sets:
 
 * determine all fields where >5% of entries are NA  
         + remove these columns from the training data and test set
+        
+Partition the coded training data into a working training set and a test set for final evaluation of the best performing method.        
 
 ```{r}
+# Determine and apply data cleaning criteria
 numInst<-length(baseData[,1])
-baseStrip_1<-baseData[,-(1:7)] ; testStrip_1<-testData[,-(1:7)]
+baseStrip_1<-baseData[,-(1:7)] ; 
+auto_testStrip_1<-auto_TestSet[,-(1:7)]
 na_level<-colSums((is.na(baseStrip_1))/numInst)<0.05
-baseStrip_2<-baseStrip_1[,na_level] ; testStrip_2<-testStrip_1[,na_level]
+trainData<-baseStrip_1[,na_level] ; 
+auto_testStrip_2<-auto_testStrip_1[,na_level]
+# partition the coded data into a working training set and the final test set
+trainSetindex <- createDataPartition(y = trainData[,ncol(trainData)], p = 0.70, list = FALSE)
+trainSet<-trainData[trainSetindex,]
+testSet<-trainData[-trainSetindex,]
 ```
 
-There are `r length(baseStrip_2[,1])` instances in the training data.   
+There are `r length(trainSet[,1])` instances in the training data and `r length(trainSet[,1])` in the test set.    
 
 Preprocess the data set to optimize range, distribution etc.  
 Remove the class identifiers from the data.
 
 ```{r}
-ppc<-preProcess(baseStrip_2[,-ncol(baseStrip_2)],method=c("BoxCox","center","scale"))
-ds<-predict(ppc,baseStrip_2[,-ncol(baseStrip_2)])
+ppc<-preProcess(trainSet[,-ncol(trainSet)],method=c("BoxCox","center","scale"))
+ds<-predict(ppc,trainSet[,-ncol(trainSet)])
 ```
 
 Perform PCA (Principal Component Analysis) and determine approx number of components required to optimize variance coverage (first 95% of variance).
@@ -79,10 +88,70 @@ ylab="cummulative %(variance)", type="b", pch=9,ylim=c(0,100))
  The classification codes were removed, along with the first 7 elements of each observation. The remaining variables were subjected to the BoxCox transformation to approximate normal distribuion, then centred and scaled. Robust imputation was ensured by removing all columns with more than 5% missing values. The cummulative variance accounted for by the components calculated by PCA are shown. 95% of variance is accounted for by the first `r numComp` components. 
 
 
-Use the preprocess function to transform the 
+Use the preprocess function to transform the training and test data
 
 ```{r}
-ppc2<-preProcess(baseStrip_2[,-ncol(baseStrip_2)],method=c("BoxCox","center","scale","pca"),pcaComp=numComp)
-reduced_Set<-predict(ppc2,baseStrip_2[,-ncol(baseStrip_2)])
-reduced_Set[ncol(reduced_Set)+1]<-baseStrip_2[,ncol(baseStrip_2)]
+ppc2<-preProcess(trainSet[,-ncol(trainSet)],method=c("BoxCox","center","scale","pca"),pcaComp=numComp)
+reduced_trSet<-predict(ppc2,trainSet[,-ncol(trainSet)])
+reduced_trSet[ncol(reduced_trSet)+1]<-trainSet[,ncol(trainSet)]
+reduced_testSet<-predict(ppc2,testSet[,-ncol(testSet)])
+reduced_testSet[ncol(reduced_testSet)+1]<-testSet[,ncol(testSet)]
+
+```
+   
+Define a function to automate the running and comparisons of a range of machine learning methods, ustilising the *train* method of the  **caret** package.  
+
+```{r}
+runTrain<-function(data,method,seed=6543){
+   library(caret)
+   set.seed(seed)
+# shuffle the data by row  
+   data <- data[sample(nrow(data)),]
+# extract a temporary training and test set  
+   trainSetindex <- createDataPartition(y = data[,ncol(data)], p = 0.75, list = FALSE)
+   trainSet<-data[trainSetindex,]
+   redTrSet<-trainSet[,-ncol(trainSet)]
+   TrKey<-trainSet[,ncol(trainSet)]
+   tSet<-data[-trainSetindex,] 
+   redTeSet<-tSet[,-ncol(tSet)]
+   TeKey<-tSet[,ncol(tSet)]
+# create file name for model
+   file = paste(method,".mdl",sep="")
+# train the model 
+   trainedModel<-train(redTrSet,TrKey,method=method)
+   save(trainedModel,file=file)
+# predict from the test set
+   predicted<-predict(trainedModel,newdata=redTeSet)
+# confusion matrix:
+   matx<-confusionMatrix(predicted,TeKey)
+# save the confusion Matrix
+   save(matx,file=paste(method,".cfm",sep=""))
+# construct a return string
+   returnTxt<-paste("\nmodel =",file,"length of processing =",sprintf("%.1f",trainedModel$times$everything["elapsed"])," seconds",sep=" ")
+   returnTxt<-paste(returnTxt,"","PERFORMANCE","===========","",sep="\n") 
+   v<-paste(capture.output(matx),collapse="\n")
+
+   returnTxt<-paste(returnTxt,v)
+   cat(returnTxt)
+}
+```
+
+```{r}
+#methods<-c("rpart","lda","svmRadial","rf")
+methods<-c("lda","lda")
+best<-0;
+meth<-""
+seeds<-c(1496,1776,1812,1969)
+for(i in seq_along(methods)){
+    summy<-runTrain(reduced_trSet,methods[i],seed=seeds[i])  
+    load(paste(methods[i],".cfm",sep=""))
+    if(matx$overall['Accuracy']>best){
+       best<-matx$overall['Accuracy']
+       meth<-methods[i]
+    }
+    summy
+}
+
+outtext<-paste("\nThe best method tried is ",meth," with an accuracy of ",best,".\n\n")
+cat(outtext)
 ```
