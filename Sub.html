@@ -8,7 +8,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 
-<meta name="author" content="JMW0103" />
+<meta name="author" content="jw149j" />
 
 
 <title>A machine learning approach to evaluate exercise performance</title>
@@ -53,8 +53,8 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 <div id="header">
 <h1 class="title">A machine learning approach to evaluate exercise performance</h1>
-<h4 class="author"><em>JMW0103</em></h4>
-<h4 class="date"><em>Thursday, September 17, 2015</em></h4>
+<h4 class="author"><em>jw149j</em></h4>
+<h4 class="date"><em>Tuesday, September 22, 2015</em></h4>
 </div>
 
 
@@ -203,8 +203,7 @@ cat(returnTxt)
 cat(paste(names(matx$byClass[,8]),sep=&quot;\t&quot;)); cat(&quot;\n&quot;)
 cat(paste(round(matx$byClass[,8],3),sep=&quot;\t    \t&quot;)); cat(&quot;\n&quot;)
 }</code></pre>
-<pre class="r"><code>#methods&lt;-c(&quot;rpart&quot;,&quot;lda&quot;,&quot;svmRadial&quot;,&quot;rf&quot;)
-methods&lt;-c(&quot;lda&quot;,&quot;lda&quot;)
+<pre class="r"><code>methods&lt;-c(&quot;rpart&quot;,&quot;lda&quot;,&quot;svmRadial&quot;,&quot;rf&quot;)
 best&lt;-0;
 meth&lt;-&quot;&quot;
 seeds&lt;-c(1496,1776,1812,1969)
@@ -218,6 +217,19 @@ for(i in seq_along(methods)){
     }
     summy
 }</code></pre>
+<pre><code>## Loading required package: rpart</code></pre>
+<pre><code>## 
+## ====================================================
+##  model = rpart.mdl length of processing = 90.4  seconds
+## 
+## 
+## PERFORMANCE
+## ===========
+## Overall accuracy
+## 0.398
+## By Class Balanced Accuracy
+## Class: A Class: B Class: C Class: D Class: E
+## 0.639 0.562 0.5 0.616 0.63</code></pre>
 <pre><code>## Loading required package: MASS</code></pre>
 <pre><code>## 
 ## ====================================================
@@ -227,29 +239,41 @@ for(i in seq_along(methods)){
 ## PERFORMANCE
 ## ===========
 ## Overall accuracy
-## 0.54
+## 0.531
 ## By Class Balanced Accuracy
 ## Class: A Class: B Class: C Class: D Class: E
-## 0.74 0.664 0.686 0.725 0.715
+## 0.727 0.64 0.679 0.748 0.716
 ## 
 ## ====================================================
-##  model = lda.mdl length of processing = 8.0  seconds
+##  model = svmRadial.mdl length of processing = 4731.9  seconds
 ## 
 ## 
 ## PERFORMANCE
 ## ===========
 ## Overall accuracy
-## 0.531
+## 0.89
 ## By Class Balanced Accuracy
 ## Class: A Class: B Class: C Class: D Class: E
-## 0.727 0.64 0.679 0.748 0.716</code></pre>
+## 0.97 0.909 0.905 0.917 0.933
+## 
+## ====================================================
+##  model = rf.mdl length of processing = 4009.3  seconds
+## 
+## 
+## PERFORMANCE
+## ===========
+## Overall accuracy
+## 0.966
+## By Class Balanced Accuracy
+## Class: A Class: B Class: C Class: D Class: E
+## 0.992 0.973 0.967 0.967 0.986</code></pre>
 <pre class="r"><code>outtext&lt;-paste(&quot;The best method tried is &quot;,meth,&quot; with an accuracy of &quot;,round(best,3),&quot;.\n&quot;)
 cat(outtext)</code></pre>
-<pre><code>## The best method tried is  lda  with an accuracy of  0.54 .</code></pre>
+<pre><code>## The best method tried is  rf  with an accuracy of  0.966 .</code></pre>
 </div>
-<div id="out-of-sample-performance-of-the-lda-method" class="section level2">
-<h2>Out of sample performance of the lda method</h2>
-<p>The best scoring method ( lda ) is applied to the test data. From this determine the <em><em>out of sample error</em></em> for the model.</p>
+<div id="out-of-sample-performance-of-the-rf-method" class="section level2">
+<h2>Out of sample performance of the rf method</h2>
+<p>The best scoring method ( rf ) is applied to the test data. From this determine the <em><em>out of sample error</em></em> for the model.</p>
 <pre class="r"><code>bestMdlFile = paste(meth,&quot;.mdl&quot;,sep=&quot;&quot;)
 load(bestMdlFile)
 
@@ -266,38 +290,38 @@ cat(v)</code></pre>
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 1108  257  304   58  108
-##          B  113  476  111  107  203
-##          C  197  225  484  144  136
-##          D  216  117  113  575  128
-##          E   40   64   14   80  507
+##          A 1652   23    2    0    1
+##          B   13 1085   25    0    9
+##          C    4   27  977   49    9
+##          D    1    3   20  913   15
+##          E    4    1    2    2 1048
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.5353          
-##                  95% CI : (0.5224, 0.5481)
+##                Accuracy : 0.9643          
+##                  95% CI : (0.9593, 0.9689)
 ##     No Information Rate : 0.2845          
 ##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
 ##                                           
-##                   Kappa : 0.4109          
-##  Mcnemar's Test P-Value : &lt; 2.2e-16       
+##                   Kappa : 0.9549          
+##  Mcnemar's Test P-Value : 6.616e-06       
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.6619  0.41791  0.47173  0.59647  0.46858
-## Specificity            0.8274  0.88748  0.85553  0.88336  0.95878
-## Pos Pred Value         0.6038  0.47129  0.40809  0.50044  0.71915
-## Neg Pred Value         0.8602  0.86400  0.88466  0.91786  0.88900
-## Prevalence             0.2845  0.19354  0.17434  0.16381  0.18386
-## Detection Rate         0.1883  0.08088  0.08224  0.09771  0.08615
-## Detection Prevalence   0.3118  0.17162  0.20153  0.19524  0.11980
-## Balanced Accuracy      0.7446  0.65270  0.66363  0.73992  0.71368</code></pre>
-<p>The out of sample error determined for this model (1 - accuracy, where accuracy reflects the performance of the model applied to the test set ) is <strong>0.465</strong> .</p>
+## Sensitivity            0.9869   0.9526   0.9522   0.9471   0.9686
+## Specificity            0.9938   0.9901   0.9817   0.9921   0.9981
+## Pos Pred Value         0.9845   0.9585   0.9165   0.9590   0.9915
+## Neg Pred Value         0.9948   0.9886   0.9898   0.9897   0.9930
+## Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+## Detection Rate         0.2807   0.1844   0.1660   0.1551   0.1781
+## Detection Prevalence   0.2851   0.1924   0.1811   0.1618   0.1796
+## Balanced Accuracy      0.9903   0.9713   0.9670   0.9696   0.9834</code></pre>
+<p>The out of sample error determined for this model (1 - accuracy, where accuracy reflects the performance of the model applied to the test set ) is <strong>0.036</strong> .</p>
 <p>Application of this model to the auto_test data set gives the following prediction:</p>
 <pre class="r"><code>predicted&lt;-predict(trainedModel,newdata=auto_testPCA)
 predicted</code></pre>
-<pre><code>##  [1] B A A A A C D D A A A A E A E B A D D B
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
 </div>
 

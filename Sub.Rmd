@@ -1,7 +1,7 @@
 ---
 title: "A machine learning approach to evaluate exercise performance"
-author: "JMW0103"
-date: "Thursday, September 17, 2015"
+author: "jw149j"
+date: "Tuesday, September 22, 2015"
 output: html_document
 ---
 ### Executive Summary.
